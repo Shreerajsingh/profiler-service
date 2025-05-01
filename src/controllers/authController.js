@@ -3,7 +3,12 @@ const authService = new AuthService();
 
 async function signup(req, res) {
     try {
-        const {user, token} = await authService.signup(req.body);
+        const data = req.body;
+        console.log(data);
+        const {user, token} = await authService.signup({
+            ...data,
+            authMethod: "Local"
+        });
         
         return res.status(201).json({
             data:{ user, token }, 
@@ -33,14 +38,16 @@ async function signin(req, res) {
     }
 }
 
-async function googleSignOut(req, res) {
+async function googleSignUp(req, res) {
     try {
-        return req.session.destroy((err) => {
-            if (err) {
-                return res.status(500).json({ success: false, error: "Sign-out failed" });
-            }
-            
-            return res.status(200).json({ success: true, message: "User signed out successfully" });
+        const data = req.body;
+        const {user, token} = await authService.signup({...data, authMethod: "Google"});
+        
+        return res.status(201).json({
+            data:{ user, token }, 
+            success: true, 
+            error: null, 
+            message: "successfully registered user"
         });
     } catch(error) {
         return res.status(400).json({ error: error.message });
@@ -49,21 +56,45 @@ async function googleSignOut(req, res) {
 
 async function googleSignIn(req, res) {
     try {
-        const { idToken } = req.body;
+        const { email } = req.body;
 
-        const { resData, foundUser} = await authService.googleSignIn( idToken );
-        
-        console.log(">>> ", resData, foundUser);
+        const {user, token} = await authService.googleSignIn(email);
 
-        res.status(200).json(resData);
+        return res.status(201).json({
+            data:{ user, token }, 
+            success: true, 
+            error: null, 
+            message: "successfully logged in user"
+        });
     } catch(error) {
         return res.status(400).json({ error: error.message });
     }
 }
 
+async function deleteUser(req, res) {
+    try {
+        const userId = req.params.id;
+
+        const result = await authService.deleteUser(userId);
+
+        return res.status(200).json({
+            success: true,
+            message: result.message,
+        });
+    } catch (error) {
+        console.error("Delete User Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+
 module.exports = {
     signup,
     signin,
     googleSignIn,
-    googleSignOut
+    googleSignUp,
+    deleteUser
 }

@@ -18,9 +18,16 @@ class AuthService {
         try {
             const user = await userRepository.createUser(userData);
 
-            const token = jwt.sign({ id: user._id}, process.env.JWT_SECRET, { expiresIn: '1d'});
+            const token = generateToken({ id: user._id });
 
-            return { user: user._id, token: token };
+            return {
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email
+                },
+                token
+            };
         } catch (error) {
             console.log(error);
             throw error;
@@ -51,45 +58,42 @@ class AuthService {
         }
     }
 
-    async googleSignIn(userIdToken) {
-        if (!userIdToken || typeof userIdToken !== "string") {
-            return res.status(400).json({ success: false, error: "Missing or Invalid token" });
-        }
-    
+    async googleSignIn(email) {
         try {
-            const { name, picture, email } = await firebase.auth().verifyIdToken(userIdToken);
-            console.log(">> ", { name, picture, email });
-            let foundUser = await User.findOne({ email });
+            let user = await userRepository.findUser(email);
 
-            if (!foundUser) {
-                const newUserObj = {
-                    name,
-                    email,
-                    authMethod: "Google",
-                    password: null,
-                    profileURL: picture,
-                };
-                foundUser = await new User(newUserObj).save();
+            if (!user) {
+                return new Error('User not found');
             }
 
-            const token = jwt.sign({ id: foundUser._id }, process.env.JWT_SECRET, { expiresIn: '1d'});
+            const token = generateToken({ id: user._id });
 
-            const resData = {
-                id: foundUser._id,
-                name: foundUser.name,
-                email: foundUser.email,
-                profileUrl: foundUser.profileURL,
-                jwtToken: token
-            }
-
-            // console.log(">> ", { resData, foundUser });
-
-            return { resData, foundUser };
+            return {
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email
+                },
+                token
+            };
         } catch (error) {
-            console.error("Token Verification Error:", error);
-            res.status(401).json({ success: false, error: "Invalid Token" });
+            throw error;
         }
     }
+
+    async deleteUser(userId) {
+        try {
+            const result = await userRepository.delete(userId);
+            return {
+                success: true,
+                message: "User and associated Freemium account deleted successfully.",
+                result
+            };
+        } catch (error) {
+            console.error("AuthService Delete Error:", error);
+            throw new Error("Failed to delete user account.");
+        }
+    }    
 }
 
 module.exports = AuthService;

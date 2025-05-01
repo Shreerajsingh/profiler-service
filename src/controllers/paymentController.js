@@ -60,7 +60,7 @@ const paypalPaymentCancel = (req, res) => {
 async function stripeCreateOrder(req, res) {
     try {
         const { userID, stripeToken, stripeEmail, amount } = req.body;
-        const charge = await paymentService.createStripePayment(userId, stripeToken, stripeEmail, amount);
+        const charge = await paymentService.createStripePayment(userID, stripeToken, stripeEmail, amount);
         res.send("Payment Successful");
       } catch (err) {
         console.error("Payment failed:", err);

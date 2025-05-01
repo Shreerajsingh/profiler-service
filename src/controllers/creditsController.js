@@ -10,7 +10,7 @@ async function removeCredits(req, res) {
       return res.status(400).json({ message: "User ID and amount are required." });
     }
 
-    const user = await userRepository.getUserById(userId);
+    const user = await userRepository.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found." });
@@ -41,7 +41,7 @@ async function getCredits(req, res) {
       return res.status(400).json({ message: "User ID is required." });
     }
 
-    const user = await userRepository.getUserById(userId);
+    const user = await userRepository.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found." });
@@ -49,6 +49,8 @@ async function getCredits(req, res) {
 
     return res.status(200).json({
       message: "User credits retrieved successfully.",
+      userId: user.id,
+      email: user.email,
       credits: user.credits
     });
   } catch (error) {
