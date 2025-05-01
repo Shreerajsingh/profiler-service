@@ -114,35 +114,27 @@ async function createPaypalPayment(userId, amount, currency, description, baseUr
 
 const stripe = require('stripe')(serverConfig.STRIPE_SECRET_KEY);
 
-async function createStripePayment(userId, token, email, amount) {
+async function createStripePayment(userId, paymentMethodId, email, amount) {
   try {
-    const customer = await stripe.customers.create({
-      email,
-      source: token,
-      name: "John Doe",
-      address: {
-        line1: "123 Main St",
-        postal_code: "12345",
-        city: "Anytown",
-        state: "California",
-        country: "US",
-      },
-    });
+    const customer = await stripe.customers.create({ email });
 
-    const charge = await stripe.charges.create({
+    const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "usd",
       customer: customer.id,
-      description: "Web Development Service",
+      payment_method: paymentMethodId,
+      confirm: true,
+      setup_future_usage: 'off_session',
+      description: "Web Development Service"
     });
 
     const credits = amount / 100;
     const user = await userRepository.addCreditsToUser(userId, credits);
 
-    return { 
-      message: "Payment successful", 
-      creditsAdded: credits, 
-      totalCredits: user.credits 
+    return {
+      message: "Payment successful",
+      creditsAdded: credits,
+      totalCredits: user.credits
     };
   } catch (error) {
     console.error("Stripe payment error:", error);
